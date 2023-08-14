@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
-	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"name": "notion-to-obsidian",
+	"version": "0.0.2",
+	"description": "Transfer Notion notes to Obsidian",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
@@ -20,5 +20,10 @@
 		"obsidian": "latest",
 		"tslib": "2.4.0",
 		"typescript": "4.7.4"
+	},
+	"dependencies": {
+		"@notionhq/client": "^2.2.10",
+		"axios": "^1.4.0",
+		"body-parser": "^1.20.2"
 	}
 }

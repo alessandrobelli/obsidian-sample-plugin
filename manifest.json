@@ -1,11 +1,11 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
+	"id": "notion-to-obsidian",
+	"name": "Notion to Obsidian",
+	"version": "0.0.2",
 	"minAppVersion": "0.15.0",
-	"description": "This is a sample plugin for Obsidian. This plugin demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
+	"description": "This plugin allows you to import your Notion notes into Obsidian.",
+	"author": "Alessandro Belli",
+	"authorUrl": "https://alessandrobelli.it",
 	"fundingUrl": "https://obsidian.md/pricing",
 	"isDesktopOnly": false
 }
