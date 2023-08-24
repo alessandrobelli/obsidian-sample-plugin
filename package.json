@@ -1,6 +1,6 @@
 {
 	"name": "notion-to-obsidian",
-	"version": "0.0.2",
+	"version": "0.0.5",
 	"description": "Transfer Notion notes to Obsidian",
 	"main": "main.js",
 	"scripts": {

@@ -1,6 +1,31 @@
-const { Client } = require("@notionhq/client");
-const path = require("path");
-const { downloadFile, getImageExtension } = require("./utilities");
+import {request} from "obsidian";
+import path from "path";
+import {downloadFile, getImageExtension} from "./utilities";
+
+
+async function getDatabaseName(apiKey, databaseId) {
+    const requestHeaders = {
+        Authorization: `Bearer ${apiKey}`,
+        "Notion-Version": "2022-06-28",
+        "Content-Type": "application/json",
+    };
+
+    try {
+        const response = await request({
+            url: `https://api.notion.com/v1/databases/${databaseId}`,
+            method: "GET",
+            headers: requestHeaders,
+        });
+
+        const data = JSON.parse(response);
+        return data.title[0].plain_text;  // Extracting the database name from the response
+    } catch (error) {
+        console.error("Error fetching database name:", error);
+        return null;  // Return null if there's an error
+    }
+}
+
+
 
 async function fetchNotionData(databaseId, apiKey) {
 	const requestHeaders = {
@@ -49,9 +74,7 @@ async function extractContentFromPage(pageId, folderName, apiKey) {
 
 	const blocks = JSON.parse(response);
 	let content = "";
-
 	for (const block of blocks.results) {
-		console.log(block.type);
 		switch (block.type) {
 			case "rich_text":
 				if (block.rich_text && block.rich_text.length) {
@@ -179,4 +202,5 @@ async function extractContentFromPage(pageId, folderName, apiKey) {
 module.exports = {
 	fetchNotionData,
 	extractContentFromPage,
+	getDatabaseName
 };

@@ -76,10 +76,20 @@ const getImageExtension = (url) => {
 const sanitizeTitle = (title) => {
 	// Remove special characters and limit length
 	return title
-		.replace(/[^a-zA-Z0-9-_ ]/g, "")
-		.replace(/ /g, "_")
+		.replace(/[^a-zA-Z0-9- ]/g, "") // Keep spaces and remove underscores from the regular expression
 		.substring(0, 200);
 };
+
+const generateUniqueTitle = (title, folderPath) => {
+    let uniqueTitle = title;
+    let counter = 1;
+    while (fs.existsSync(`${folderPath}/${uniqueTitle}.md`)) {
+        uniqueTitle = `${title} (${counter})`;
+        counter += 1;
+    }
+    return uniqueTitle;
+};
+
 
 const writeFilePromise = (fileName, content) => {
 	return new Promise((resolve, reject) => {
@@ -101,4 +111,5 @@ module.exports = {
 	getImageExtension,
 	sanitizeTitle,
 	writeFilePromise,
+	generateUniqueTitle
 };
