@@ -4,6 +4,9 @@
 
 The Notion Migration Plugin allows you to seamlessly migrate your Notion databases into your Obsidian vault. Say goodbye to the manual labor of copying and pasting your data! 🙌
 
+
+![Plugin Screenshot](./screenshot.png)
+
 ## Features 🌟
 
 - 🗝️ **Notion API Integration**: Use your Notion API key to connect directly to your Notion workspace.
