@@ -8,7 +8,7 @@ async function createMarkdownFiles(allPages, folderName, apiKey, app, attachPage
     const vaultPath = app.vault.adapter.basePath; // Get the base path of the Obsidian vault
 
     for (const page of allPages) {
-        let relationLinks = "";
+        let relationLinks = [];
         if (!importControl.isImporting) {
             logMessage("Import halted by user.");
             break; // Exit the loop if import has been halted
@@ -142,13 +142,13 @@ async function createMarkdownFiles(allPages, folderName, apiKey, app, attachPage
                     break;
                 case "relation":
                     if (property.relation && property.relation.length) {
-                        const relatedNames = [];
                         const requestHeaders = {
                             Authorization: `Bearer ${apiKey}`,
                             "Notion-Version": "2022-06-28",
                             "Content-Type": "application/json",
                         };
 
+                        let relatedNames = [];
                         for (const rel of property.relation) {
                             const pageId = rel.id;
                             const response = await request({
@@ -158,21 +158,19 @@ async function createMarkdownFiles(allPages, folderName, apiKey, app, attachPage
                             });
                             const pageData = JSON.parse(response);
                             const pageName = pageData.properties.Name.title[0].plain_text;
-                            if (createRelationContentPage) {
-                                if (relationLinks == "") relationLinks += `${safeKey(key)}:`
-                                relationLinks += `[[${pageName}]], `;
-                            } else {
-
-                                relatedNames.push(pageName);
-                            }
-
+                            relatedNames.push(pageName);
                         }
 
-                        if (createRelationContentPage) content += `${safeKey(key)}: [${relatedNames.join(", ")}]\n`;
+                        if (createRelationContentPage) {
+                            relationLinks.push(`${safeKey(key)}: ${relatedNames.map(name => `[[${name}]]`)}\n`);
+                        } else {
+                            content += `${safeKey(key)}: ${relatedNames.join(", ")}\n`; // Add relation as an array of names
+                        }
                     } else {
                         content += `${safeKey(key)}: \n`;
                     }
                     break;
+
 
                 case "url":
                     if (property.url) {
@@ -211,8 +209,6 @@ async function createMarkdownFiles(allPages, folderName, apiKey, app, attachPage
                                             break;
                                     }
                                     break;
-                                // Handle other rollup item types
-                                // ...
                             }
                         });
                     } else {
@@ -234,12 +230,11 @@ async function createMarkdownFiles(allPages, folderName, apiKey, app, attachPage
                     break;
 
             }
+
         }
         content += `---\n`;
+        if (relationLinks.length > 0) content += relationLinks;
 
-        if (relationLinks) {
-            content += relationLinks.slice(0, -2) + '\n\n'; // Step 3: Add the relation links to the content
-        }
         if (importPageContent) {
             const pageContent = await extractContentFromPage(
                 page.id,

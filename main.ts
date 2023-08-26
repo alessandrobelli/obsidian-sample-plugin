@@ -1,47 +1,36 @@
-import {App, FuzzySuggestModal, Plugin, PluginSettingTab, Setting, TFolder} from "obsidian";
+import {App, FuzzySuggestModal, Plugin, PluginSettingTab, Setting, TFolder, SuggestModal} from "obsidian";
 import {fetchNotionData, getDatabaseName} from "./notionHandling";
 import {createMarkdownFiles} from "./markdownCreation";
 import fs from "fs";
+import tippy from 'tippy.js';
+import {TextInputSuggest} from "./suggest";
 
+export class FolderSuggest extends TextInputSuggest<TFolder> {
+    getSuggestions(inputStr: string): TFolder[] {
+        const abstractFiles = app.vault.getAllLoadedFiles();
+        const folders: TFolder[] = [];
+        const lowerCaseInputStr = inputStr.toLowerCase();
 
-class FolderSuggestModal extends FuzzySuggestModal<TFolder> {
-    constructor(app: App, private callback: (folder: TFolder) => void) {
-        super(app);
-    }
-
-    listAllDirectories(): TFolder[] {
-        const vaultPath = this.app.vault.adapter.basePath;
-        const directories = [];
-
-        const items = fs.readdirSync(vaultPath, {withFileTypes: true});
-        for (const item of items) {
-            if (item.isDirectory()) {
-                const folder = this.app.vault.getAbstractFileByPath(item.name);
-                if (folder instanceof TFolder) {
-                    directories.push(folder);
-                }
+        abstractFiles.forEach((folder: TAbstractFile) => {
+            if (
+                folder instanceof TFolder &&
+                folder.path.toLowerCase().contains(lowerCaseInputStr)
+            ) {
+                folders.push(folder);
             }
-        }
+        });
 
-        return directories;
+        return folders;
     }
 
-    getAllFolders(): TFolder[] {
-        return this.listAllDirectories();
+    renderSuggestion(file: TFolder, el: HTMLElement): void {
+        el.setText(file.path);
     }
 
-    getItems(): TFolder[] {
-        return this.getAllFolders();
-    }
-
-    getItemText(item: TFolder): string {
-        return item.path;
-    }
-
-    onChooseItem(item: TFolder, evt: MouseEvent | KeyboardEvent): void {
-        evt.preventDefault();
-        this.callback(item);
-        this.modalEl.remove();
+    selectSuggestion(file: TFolder): void {
+        this.inputEl.value = file.path;
+        this.inputEl.trigger("input");
+        this.close();
     }
 }
 
@@ -73,24 +62,14 @@ export default class NotionMigrationPlugin extends Plugin {
         isImporting: false
     };
 
-    addHoverStyles() {
-        const style = document.createElement('style');
-        style.innerHTML = `
-        .start-button:not(:disabled):hover,
-        .stop-button:not(:disabled):hover {
-            opacity: 0.5;
-        }
-    `;
-        document.head.appendChild(style);
-    }
 
     async onload() {
         await this.loadSettings();
         this.addSettingTab(new NotionMigrationSettingTab(this.app, this));
-        // Add CSS for the hover effect
-        this.addHoverStyles();
+
 
     }
+
 
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
@@ -101,18 +80,6 @@ export default class NotionMigrationPlugin extends Plugin {
     }
 }
 
-// Function to wipe the vault after a delay
-async function wipeVaultAfterDelay(app) {
-    setTimeout(async () => {
-        const files = app.vault.getFiles();
-
-        for (const file of files) {
-            await app.vault.delete(file);
-        }
-
-        console.log("All files are not deleted, enable this!");
-    }, 1000); // 5 seconds delay
-}
 
 class NotionMigrationSettingTab extends PluginSettingTab {
     plugin: NotionMigrationPlugin;
@@ -121,6 +88,27 @@ class NotionMigrationSettingTab extends PluginSettingTab {
         super(app, plugin);
         this.plugin = plugin;
     }
+
+    private listAllDirectories(): TFolder[] {
+        const vaultPath = this.app.vault.adapter.basePath;
+        const directories = [];
+
+        const items = fs.readdirSync(vaultPath, {withFileTypes: true});
+        for (const item of items) {
+            if (item.isDirectory()) {
+                const folder = this.app.vault.getAbstractFileByPath(item.name);
+                if (folder instanceof TFolder) {
+                    directories.push(folder);
+                }
+            }
+        }
+
+        return directories;
+    }
+
+
+    // Declare a variable to hold the text input element for Database ID
+    dbIdInput: HTMLInputElement;
 
     display(): void {
 
@@ -196,7 +184,7 @@ class NotionMigrationSettingTab extends PluginSettingTab {
                     allPages,
                     this.plugin.settings.migrationPath,
                     this.plugin.settings.apiKey,
-                    app,
+                    this.app,
                     this.plugin.settings.attachPageId,
                     this.plugin.settings.importPageContent,
                     this.plugin.importControl,
@@ -226,7 +214,114 @@ class NotionMigrationSettingTab extends PluginSettingTab {
 
     }
 
+
+    async displayPageList() {
+        const apiKey = this.plugin.settings.apiKey; // Replace with the actual API key retrieval logic
+        const query = ''; // Empty query to search for all pages
+
+        const requestOptions = {
+            method: 'POST',
+            url: 'https://api.notion.com/v1/search',
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Notion-Version': '2022-06-28',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                query: query, filter: {
+                    value: 'database',
+                    property: 'object',
+                },
+            }),
+        };
+
+
+        try {
+            const response = await request(requestOptions);
+            const responseData = JSON.parse(response);
+
+            const container = document.getElementById('page-list-container');
+            container.innerHTML = ''; // Clear previous content
+
+            const buttonContainer = container.createDiv({
+                cls: 'hide-button-container',
+                attr: {
+                    style: 'margin-top: 10px; margin-bottom: 10px;display: flex; justify-content: space-between;'
+                }
+            });
+            console.log(responseData);
+            // Add "Hide" button
+            const hideButton = buttonContainer.createEl('button', {text: 'Hide'});
+            hideButton.addEventListener('click', () => {
+                tableWrapper.style.display = tableWrapper.style.display === 'none' ? 'block' : 'none';
+            });
+            // Add a message next to the "Hide" button
+            const messageSpan = buttonContainer.createEl('span', {
+                text: 'Click on the row to update database ID. Hover to check properties.',
+                attr: {}
+            });
+
+            // Create a scrollable wrapper for the table
+            const tableWrapper = container.createEl('div', {
+                attr: {style: 'max-height: 350px; overflow-y: auto;'}
+            });
+
+            const table = tableWrapper.createEl('table', {
+                attr: {style: 'width: 100%; border-collapse: collapse;'}
+            });
+
+
+            // Table header
+            const thead = table.createEl('thead');
+            const headerRow = thead.createEl('tr');
+            headerRow.createEl('th', {text: 'Page Name', attr: {style: 'padding: 10px; border: 1px solid #ccc;'}});
+            headerRow.createEl('th', {text: 'Page ID', attr: {style: 'padding: 10px; border: 1px solid #ccc;'}});
+
+            // Table body with clickable rows
+            const tbody = table.createEl('tbody');
+
+
+            for (const page of responseData.results) {
+                const pageName = page.title && page.title[0] && page.title[0].plain_text
+                    ? page.title[0].plain_text
+                    : ''; // Use empty string if undefined
+                const row = tbody.createEl('tr');
+                row.createEl('td', {text: pageName, attr: {style: 'padding: 10px; border: 1px solid #ccc;'}});
+                row.createEl('td', {text: page.id, attr: {style: 'padding: 10px; border: 1px solid #ccc;'}});
+
+                // Create a tooltip for the row
+                let propertiesText = "<strong>Properties</strong> <br>";
+                for (const [key, value] of Object.entries(page.properties || {})) {
+                    propertiesText += `${key} - ${value.type} <br>`;
+                }
+                tippy(row, {
+                    content: propertiesText,
+                    allowHTML: true,
+
+                    theme: 'light',
+                    delay: 100,  // Delay in showing tooltip
+                    arrow: true,  // Show the arrow
+                    duration: [300, 200],  // Duration of show/hide animations
+                });
+
+                // Click event for the row
+                row.addEventListener('click', async () => {
+                    this.plugin.settings.databaseId = page.id;
+                    // Update the text input
+                    if (this.dbIdInput) {
+                        this.dbIdInput.value = page.id;
+                    }
+                    await this.plugin.saveSettings();
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    }
+
+
     private createUI(containerEl: HTMLElement) {
+
         containerEl.createEl("h1", {
             text: "Notion to Obsidian Migration Settings",
         });
@@ -239,46 +334,42 @@ class NotionMigrationSettingTab extends PluginSettingTab {
                     this.plugin.settings.apiKey = value;
                     await this.plugin.saveSettings();
                 })
-            );
+            ).addButton(button => button
+            .setButtonText("Search DBs")
+            .setCta()
+            .onClick(() => {
+                this.displayPageList();
+            })
+        );
+// Placeholder for the page list table
+        containerEl.createDiv({
+            attr: {id: 'page-list-container'}
+        });
 
         new Setting(containerEl)
             .setName("Database ID")
             .setDesc("Enter your Notion Database ID here.")
-            .addText((text) =>
+            .addText((text) => {
+                this.dbIdInput = text.inputEl;
                 text
                     .setValue(this.plugin.settings.databaseId)
                     .onChange(async (value) => {
                         this.plugin.settings.databaseId = value;
                         await this.plugin.saveSettings();
                     })
-            );
-
-        new Setting(containerEl).setName("Migration Path").addText((text) => {
-            let fromSuggestion = false; // Add this flag
-
-            text
-                .setPlaceholder("Choose or type a folder name inside your vault")
-                .setValue(this.plugin.settings.migrationPath)
-                .onChange(async (value) => {
-                    this.plugin.settings.migrationPath = value;
-                    await this.plugin.saveSettings();
-                });
-
-            // Open the suggest modal when the input field is focused
-            text.inputEl.addEventListener("focus", () => {
-                if (fromSuggestion) {
-                    // Check the flag here
-                    fromSuggestion = false; // Reset the flag
-                    return;
-                }
-                new FolderSuggestModal(this.app, async (folder) => {
-                    fromSuggestion = true; // Set the flag to true when a suggestion is chosen
-                    text.setValue(folder.path);
-                    this.plugin.settings.migrationPath = folder.path;
-                    await this.plugin.saveSettings(); // Explicitly save settings after setting the value
-                }).open();
             });
-        });
+
+        new Setting(containerEl)
+            .setName("Migration Path")
+            .addText((text) => {
+                text.setValue(this.plugin.settings.migrationPath)
+                    .onChange(async (value) => {
+                        this.plugin.settings.migrationPath = value;
+                        await this.plugin.saveSettings();
+                    });
+
+                new FolderSuggest(text.inputEl); // Initialize FolderSuggest
+            });
         new Setting(containerEl)
             .setName("Create relations inside the page")
             .setDesc("By default you can't link notes inside properties, so we can insert relations inside the page")
@@ -351,4 +442,6 @@ class NotionMigrationSettingTab extends PluginSettingTab {
             });
         return {logWindow, startButton, stopButton};
     }
+
+
 }

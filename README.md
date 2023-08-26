@@ -1,96 +1,65 @@
-# Obsidian Sample Plugin
+# Notion Migration Plugin for Obsidian 🚀
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+## Overview 🌐
 
-This project uses Typescript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in Typescript Definition format, which contains TSDoc comments describing what it does.
+The Notion Migration Plugin allows you to seamlessly migrate your Notion databases into your Obsidian vault. Say goodbye to the manual labor of copying and pasting your data! 🙌
 
-**Note:** The Obsidian API is still in early alpha and is subject to change at any time!
+## Features 🌟
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+- 🗝️ **Notion API Integration**: Use your Notion API key to connect directly to your Notion workspace.
+- 📚 **Database ID Search**: Easily find your Notion database by ID.
+- 📂 **Dynamic Folder Suggestions**: As you type the migration path, get real-time folder suggestions.
+- 🖋️ **Page Relations**: Choose to insert relations inside the page if your Notion notes have properties that link to other pages.
+- 🏷️ **Attach Page ID**: Option to attach Notion page ID to Obsidian note titles, useful if you have pages with the same name.
+- 📄 **Page Content**: Toggle to import the content of the pages from Notion.
+- 📝 **Migration Log**: Keep track of your migration progress.
 
-## First time developing plugins?
+## Installation 🛠️
 
-Quick starting guide for new plugin devs:
+1. Open Obsidian
+2. Go to `Community plugins` in your `Settings`
+3. Search for `Notion to Obsidian`
+4. Click `Install`
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+## How to Use 📘
 
-## Releasing new releases
+### Settings Tab
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+Navigate to the `Notion to Obsidian` settings tab, where you can:
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+1. **Enter your Notion API Key**: Make sure you've integrated your Notion workspace with the plugin.
 
-## Adding your plugin to the community plugin list
+2. **Search Notion Databases**: Click the `Search DBs` button to populate a list of databases you can migrate.
 
-- Check https://github.com/obsidianmd/obsidian-releases/blob/master/plugin-review.md
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+3. **Specify the Database ID**: After finding your database, specify its ID.
 
-## How to use
+4. **Set Migration Path**: Choose the Obsidian folder where you want the Notion database to be migrated to.
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+5. **Set Optional Parameters**:
+    - `Create relations inside the page`: To include relations inside the Obsidian note.
+    - `Attach page ID at the end`: To append Notion's page ID at the end of your Obsidian note.
+    - `Import page content`: To import the actual content of your Notion pages into Obsidian.
 
-## Manually installing the plugin
+6. **Start the Migration**: Click `Start Migration`. A migration log will appear showing the progress.
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+7. **Stop the Migration**: If you need to stop the migration for any reason, click `Stop Migration`.
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
+### Migration Log
 
-## Funding URL
+You can view the migration log to see the details of what was migrated, any errors, etc. You can also clear the log by clicking `Clear Log`.
 
-You can include funding URLs where people who use your plugin can financially support it.
+## Known Issues ❗
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+None at the moment.
 
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
-```
+## Contributing 🤝
 
-If you have multiple URLs, you can also do:
+Feel free to create an issue or pull request if you find any bugs or have some great feature ideas.
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
+## License 📜
 
-## API Documentation
+MIT License.
 
-See https://github.com/obsidianmd/obsidian-api
+---
+
+🎉 **Happy migrating your Notion databases into Obsidian!** 🎉
