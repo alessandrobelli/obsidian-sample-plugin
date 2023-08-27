@@ -1,3 +1,5 @@
+> Coming soon: This ![Obsidian](https://obsidian.md/) plugin is set to launch shortly!
+
 # Notion Migration Plugin for Obsidian 🚀
 
 ## Overview 🌐
