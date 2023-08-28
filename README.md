@@ -4,7 +4,8 @@
 
 ## Overview 🌐
 
-The Notion Migration Plugin allows you to seamlessly migrate your Notion databases into your Obsidian vault. Say goodbye to the manual labor of copying and pasting your data! 🙌
+The N2O (Notion to Obsidian) allows you to seamlessly migrate your Notion databases into your Obsidian vault.
+Say goodbye to the manual labor of copying and pasting your data! 🙌
 
 
 ![Plugin Screenshot](./screenshot.png)
@@ -15,7 +16,7 @@ The Notion Migration Plugin allows you to seamlessly migrate your Notion databas
 - 📚 **Database ID Search**: Easily find your Notion database by ID.
 - 📂 **Dynamic Folder Suggestions**: As you type the migration path, get real-time folder suggestions.
 - 🖋️ **Page Relations**: Choose to insert relations inside the page if your Notion notes have properties that link to other pages.
-- 🏷️ **Attach Page ID**: Option to attach Notion page ID to Obsidian note titles, useful if you have pages with the same name.
+- 🏷️ **Attach Page ID**: Option to attach Notion page ID to Obsidian note titles, useful if you have pages with the same name. Anyway the plugin will use a sequential number at the end.
 - 📄 **Page Content**: Toggle to import the content of the pages from Notion.
 - 📝 **Migration Log**: Keep track of your migration progress.
 
@@ -36,12 +37,12 @@ Navigate to the `Notion to Obsidian` settings tab, where you can:
 
 2. **Search Notion Databases**: Click the `Search DBs` button to populate a list of databases you can migrate.
 
-3. **Specify the Database ID**: After finding your database, specify its ID.
+3. **Specify the Database ID**: After finding your database, specify its ID. You can just click on any in the list.
 
-4. **Set Migration Path**: Choose the Obsidian folder where you want the Notion database to be migrated to.
+4. **Set Migration Path**: First create then choose the Obsidian folder where you want the Notion database to be migrated to.
 
 5. **Set Optional Parameters**:
-    - `Create relations inside the page`: To include relations inside the Obsidian note.
+    - `Create relations inside the page`: To include relations inside the Obsidian note. In this way they won't appear in frontmatter and you can see the connection in the graph.
     - `Attach page ID at the end`: To append Notion's page ID at the end of your Obsidian note.
     - `Import page content`: To import the actual content of your Notion pages into Obsidian.
 
@@ -55,7 +56,8 @@ You can view the migration log to see the details of what was migrated, any erro
 
 ## Known Issues ❗
 
-None at the moment.
+1. Sometimes the migration log won't clear.
+2. Not all Notion content is (well) supported.
 
 ## Contributing 🤝
 

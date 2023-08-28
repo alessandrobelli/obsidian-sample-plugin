@@ -1,9 +1,9 @@
 {
 	"id": "notion-to-obsidian",
-	"name": "Notion to Obsidian",
+	"name": "n20",
 	"version": "0.1",
-	"minAppVersion": "0.15.0",
-	"description": "This plugin allows you to import your Notion notes into Obsidian.",
+	"minAppVersion": "1.15.0",
+	"description": "This plugin allows you to import your Notion databases into Obsidian.",
 	"author": "Alessandro Belli",
 	"authorUrl": "https://alessandrobelli.it",
 	"fundingUrl": "https://www.buymeacoffee.com/alessandrobelli",
