@@ -135,9 +135,6 @@ class NotionMigrationSettingTab extends PluginSettingTab {
 
         stopButton.disabled = !this.plugin.importControl.isImporting;
 
-
-        startButton.style.marginLeft = "10px";
-
         startButton.addEventListener("click", async () => {
             const migrationPath = this.plugin.settings.migrationPath;
 
@@ -154,6 +151,7 @@ class NotionMigrationSettingTab extends PluginSettingTab {
             stopButton.disabled = false;
             startButton.textContent = "Migrating...";
             const spinnerEl = startButton.createEl("div");
+            spinnerEl.style.marginLeft = "5px";
             spinnerEl.classList.add("spinner");
             startButton.appendChild(spinnerEl);
 
@@ -273,7 +271,7 @@ class NotionMigrationSettingTab extends PluginSettingTab {
             });
 
             const table = tableWrapper.createEl('table', {
-                attr: {style: 'width: 100%; border-collapse: collapse;'}
+                attr: {style: 'width: 100%; border-collapse: collapse;position: relative'}
             });
 
             hideButtonDbs.addEventListener('click', () => {
@@ -313,6 +311,23 @@ class NotionMigrationSettingTab extends PluginSettingTab {
 
                 // Existing row click event code
                 row.addEventListener('click', async () => {
+
+
+                    // Create a loading indicator
+                    const loadingIndicator = document.createElement('div');
+                    loadingIndicator.innerHTML = 'Loading properties...';
+                    loadingIndicator.style.position = 'absolute';
+                    loadingIndicator.style.top = '50%';
+                    loadingIndicator.style.left = '50%';
+                    loadingIndicator.style.transform = 'translate(-50%, -50%)';
+                    loadingIndicator.style.zIndex = '10';
+                    loadingIndicator.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                    loadingIndicator.style.color = 'white';
+                    loadingIndicator.style.padding = '15px';
+                    loadingIndicator.style.borderRadius = '5px';
+
+                    // Add the loading indicator to the table wrapper
+                    tableWrapper.appendChild(loadingIndicator);
                     this.plugin.settings.databaseId = page.id;
                     if (this.dbIdInput) {
                         this.dbIdInput.value = page.id;
@@ -323,6 +338,8 @@ class NotionMigrationSettingTab extends PluginSettingTab {
                     // Fetch properties for the clicked database
                     const allPages = await fetchNotionData(page.id, this.plugin.settings.apiKey);
 
+                    // Remove the loading indicator
+                    tableWrapper.removeChild(loadingIndicator);
                     if (allPages.length > 0) {
                         // Assume all pages have the same properties and take the properties of the first page as an example
                         const exampleProperties = allPages[0].properties;
@@ -444,8 +461,8 @@ class NotionMigrationSettingTab extends PluginSettingTab {
                 new FolderSuggest(text.inputEl); // Initialize FolderSuggest
             });
         new Setting(containerEl)
-            .setName("Create relations inside the page")
-            .setDesc("By default you can't link notes inside properties, so we can insert relations inside the page")
+            .setName("Create relations also inside the page")
+            .setDesc("By default you can't link notes inside properties, so we can also insert relations inside the page")
             .addToggle(toggle =>
                 toggle
                     .setValue(this.plugin.settings.createRelationContentPage)

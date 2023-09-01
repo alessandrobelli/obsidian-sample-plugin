@@ -8,6 +8,7 @@ If your plugin does not need CSS, delete this file.
 */
 
 .spinner {
+    position: absolute;
     border: 4px solid rgba(255, 255, 255, 0.3); /* Light gray */
     border-radius: 50%;
     border-top: 4px solid #000000; /* Black */

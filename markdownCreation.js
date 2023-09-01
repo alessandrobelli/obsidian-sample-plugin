@@ -170,6 +170,7 @@ async function createMarkdownFiles(allPages, folderName, apiKey, app, attachPage
                         }
 
                         if (createRelationContentPage) {
+                            content += `${safeKey(key)}: ${relatedNames.join(", ")}\n`;
                             relationLinks.push(`${safeKey(key)}: ${relatedNames.map(name => `[[${name}]]`)}\n`);
                         } else {
                             content += `${safeKey(key)}: ${relatedNames.join(", ")}\n`; // Add relation as an array of names
