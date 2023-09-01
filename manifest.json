@@ -1,6 +1,6 @@
 {
 	"id": "notion-to-obsidian",
-	"name": "n20",
+	"name": "n2o",
 	"version": "0.1",
 	"minAppVersion": "1.15.0",
 	"description": "This plugin allows you to import your Notion databases into Obsidian.",

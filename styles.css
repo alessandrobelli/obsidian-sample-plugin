@@ -38,6 +38,11 @@ If your plugin does not need CSS, delete this file.
 tbody tr:hover {
     opacity: 0.8;
 }
+
+tbody {
+	cursor: pointer;
+}
+
 .tooltip-text {
     visibility: hidden;
     position: absolute;
