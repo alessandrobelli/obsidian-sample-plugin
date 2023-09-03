@@ -3,12 +3,18 @@ import {extractContentFromPage} from "./notionHandling";
 import {downloadFile, sanitizeTitle, writeFilePromise, generateUniqueTitle} from "./utilities";
 import path from "path";
 
-async function createMarkdownFiles(allPages, folderName, apiKey, app, attachPageId, importPageContent, importControl, logMessage, createRelationContentPage, enabledProperties) {
+function safeKey(key) {
+    return key.replace(/[":]/g, '');
+}
+
+
+async function createMarkdownFiles(allPages, folderName, apiKey, app, attachPageId, importPageContent, importControl, logMessage, createRelationContentPage, enabledProperties, createSemanticLinking) {
     const promises = [];
     const vaultPath = app.vault.adapter.basePath; // Get the base path of the Obsidian vault
 
     for (const page of allPages) {
         let relationLinks = [];
+        let relationSemanticLinks = [];
         if (!importControl.isImporting) {
             logMessage("Import halted by user.");
             break; // Exit the loop if import has been halted
@@ -169,11 +175,20 @@ async function createMarkdownFiles(allPages, folderName, apiKey, app, attachPage
                             relatedNames.push(pageName);
                         }
 
+                        // Semantic Linking part
+                        if (createSemanticLinking) {
+                            const safeKeyWithUnderscores = safeKey(key).replace(/ /g, '_');
+                            const semanticLink = `${safeKeyWithUnderscores}:: ${relatedNames.map(name => `[[${name}]]`).join(", ")}`;
+                            relationSemanticLinks.push(semanticLink);
+                        }
+
                         if (createRelationContentPage) {
-                            content += `${safeKey(key)}: ${relatedNames.join(", ")}\n`;
+                            // Create relation in YAML list format
+                            content += `${safeKey(key)}:\n${relatedNames.map(name => `  - [[${name}]]`).join("\n")}\n`;
                             relationLinks.push(`${safeKey(key)}: ${relatedNames.map(name => `[[${name}]]`)}\n`);
                         } else {
-                            content += `${safeKey(key)}: ${relatedNames.join(", ")}\n`; // Add relation as an array of names
+                            // Create relation in YAML list format
+                            content += `${safeKey(key)}:\n${relatedNames.map(name => `  - ${name}`).join("\n")}\n`;
                         }
                     } else {
                         content += `${safeKey(key)}: \n`;
@@ -243,6 +258,7 @@ async function createMarkdownFiles(allPages, folderName, apiKey, app, attachPage
         }
         content += `---\n`;
         if (relationLinks.length > 0) content += relationLinks;
+        if (relationSemanticLinks.length > 0) content += relationSemanticLinks;
 
         if (importPageContent) {
             const pageContent = await extractContentFromPage(

@@ -43,6 +43,7 @@ interface NotionMigrationSettings {
     importPageContent: boolean;
     isImporting: boolean;
     createRelationContentPage: boolean;
+    createSemanticLinking: boolean;
     enabledProperties: { [key: string]: boolean };
 }
 
@@ -56,6 +57,7 @@ const DEFAULT_SETTINGS: NotionMigrationSettings = {
     isImporting: false,
     createRelationContentPage: true,
     enabledProperties: {},
+    createSemanticLinking: true,
 };
 
 export default class NotionMigrationPlugin extends Plugin {
@@ -191,7 +193,8 @@ class NotionMigrationSettingTab extends PluginSettingTab {
                     this.plugin.importControl,
                     logMessage,
                     this.plugin.settings.createRelationContentPage,
-                    this.plugin.settings.enabledProperties
+                    this.plugin.settings.enabledProperties,
+                    this.plugin.settings.createSemanticLinking,
                 );
                 logMessage("Migration completed!");
             } catch (error) {
@@ -472,10 +475,22 @@ class NotionMigrationSettingTab extends PluginSettingTab {
                     })
             );
 
+        new Setting(containerEl)
+            .setName("Create Semantic Linking")
+            .setDesc("Enable this option to create semantic links between notes.")
+            .addToggle(toggle =>
+                toggle
+                    .setValue(this.plugin.settings.createSemanticLinking)
+                    .onChange(async value => {
+                        this.plugin.settings.createSemanticLinking = value;
+                        await this.plugin.saveSettings();
+                    })
+            );
+
 
         new Setting(containerEl)
             .setName("Attach page ID at the end")
-            .setDesc("Necessary if you have pages with the same name in Notion.")
+            .setDesc("Useful if you have pages with the same name in Notion, since Obsidian doesn't support same name notes. Anyway the plugin will attach a sequential number.")
             .addToggle(toggle =>
                 toggle
                     .setValue(this.plugin.settings.attachPageId)
