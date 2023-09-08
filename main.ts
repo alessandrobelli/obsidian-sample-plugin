@@ -39,11 +39,13 @@ interface NotionMigrationSettings {
     databaseId: string;
     migrationPath: string;
     migrationLog: string;
+    attachmentPath: string;
     attachPageId: boolean;
     importPageContent: boolean;
     isImporting: boolean;
     createRelationContentPage: boolean;
     createSemanticLinking: boolean;
+    squashDateNamesForDataview: boolean;
     enabledProperties: { [key: string]: boolean };
 }
 
@@ -52,12 +54,14 @@ const DEFAULT_SETTINGS: NotionMigrationSettings = {
     databaseId: "",
     migrationPath: "",
     migrationLog: "",
+    attachmentPath: "",
     attachPageId: false,
     importPageContent: true,
     isImporting: false,
     createRelationContentPage: true,
     enabledProperties: {},
     createSemanticLinking: true,
+    squashDateNamesForDataview: true,
 };
 
 export default class NotionMigrationPlugin extends Plugin {
@@ -87,6 +91,7 @@ export default class NotionMigrationPlugin extends Plugin {
 
 class NotionMigrationSettingTab extends PluginSettingTab {
     plugin: NotionMigrationPlugin;
+    collapsibleContent: HTMLElement;
 
     constructor(app: App, plugin: NotionMigrationPlugin) {
         super(app, plugin);
@@ -195,6 +200,8 @@ class NotionMigrationSettingTab extends PluginSettingTab {
                     this.plugin.settings.createRelationContentPage,
                     this.plugin.settings.enabledProperties,
                     this.plugin.settings.createSemanticLinking,
+                    this.plugin.settings.attachmentPath,
+                    this.plugin.settings.squashDateNamesForDataview,
                 );
                 logMessage("Migration completed!");
             } catch (error) {
@@ -254,13 +261,12 @@ class NotionMigrationSettingTab extends PluginSettingTab {
                     style: 'margin-top: 10px; margin-bottom: 10px;display: flex; justify-content: space-between;'
                 }
             });
-            console.log(responseData);
+
             // Add "Hide" button
             const hideButton = buttonContainer.createEl('button', {text: 'Hide'});
             hideButton.addEventListener('click', () => {
                 tableWrapper.style.display = tableWrapper.style.display === 'none' ? 'block' : 'none';
             });
-            const hideButtonDbs = buttonContainer.createEl('button', {text: 'Hide DBs'});
 
             // Add a message next to the "Hide" button
             const messageSpan = buttonContainer.createEl('span', {
@@ -277,9 +283,6 @@ class NotionMigrationSettingTab extends PluginSettingTab {
                 attr: {style: 'width: 100%; border-collapse: collapse;position: relative'}
             });
 
-            hideButtonDbs.addEventListener('click', () => {
-                table.style.display = table.style.display === 'none' ? 'block' : 'none';
-            });
             // Table header
             const thead = table.createEl('thead');
             const headerRow = thead.createEl('tr');
@@ -354,7 +357,7 @@ class NotionMigrationSettingTab extends PluginSettingTab {
                         }
 
                         // Create a new properties table
-                        const propertiesTable = tableWrapper.createEl('table', {
+                        const propertiesTable = this.collapsibleContent.createEl('table', {
                             attr: {
                                 id: 'properties-table',
                                 style: 'width: 100%; border-collapse: collapse; margin-top: 20px;'
@@ -439,6 +442,30 @@ class NotionMigrationSettingTab extends PluginSettingTab {
             attr: {id: 'page-list-container'}
         });
 
+        // Create a header for the collapsible section
+        const collapsibleHeader = containerEl.createEl("button", {
+            text: "Show Table Properties",
+            attr: {class: 'collapsible'}
+        });
+
+        // Initialize the collapsible content
+        this.collapsibleContent = containerEl.createEl("div", {
+            attr: {class: 'collapsible-content'}
+        });
+
+
+        // JavaScript to handle the collapsible behavior
+        collapsibleHeader.addEventListener("click", function () {
+            this.classList.toggle("active");
+            const content = this.nextElementSibling;
+            if (content.style.display === "block") {
+                content.style.display = "none";
+            } else {
+                content.style.display = "block";
+            }
+        });
+
+
         new Setting(containerEl)
             .setName("Database ID")
             .setDesc("Enter your Notion Database ID here.")
@@ -463,6 +490,19 @@ class NotionMigrationSettingTab extends PluginSettingTab {
 
                 new FolderSuggest(text.inputEl); // Initialize FolderSuggest
             });
+
+        new Setting(containerEl)
+            .setName("Attachment Path")
+            .addText((text) => {
+                text.setValue(this.plugin.settings.attachmentPath)
+                    .onChange(async (value) => {
+                        this.plugin.settings.attachmentPath = value;
+                        await this.plugin.saveSettings();
+                    });
+
+                new FolderSuggest(text.inputEl); // Initialize FolderSuggest
+            });
+
         new Setting(containerEl)
             .setName("Create relations also inside the page")
             .setDesc("By default you can't link notes inside properties, so we can also insert relations inside the page")
@@ -483,6 +523,18 @@ class NotionMigrationSettingTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.createSemanticLinking)
                     .onChange(async value => {
                         this.plugin.settings.createSemanticLinking = value;
+                        await this.plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Squash Date Names for Dataview")
+            .setDesc("Enable this option to squash date field names into a single word for Dataview compatibility.")
+            .addToggle(toggle =>
+                toggle
+                    .setValue(this.plugin.settings.squashDateNamesForDataview) // Assuming you have this field in your settings
+                    .onChange(async value => {
+                        this.plugin.settings.squashDateNamesForDataview = value;
                         await this.plugin.saveSettings();
                     })
             );

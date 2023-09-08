@@ -1,30 +1,29 @@
 import {request} from "obsidian";
 import path from "path";
-import {downloadFile, getImageExtension} from "./utilities";
+import {downloadFile, getImageExtension, writeFilePromise} from "./utilities";
 
 
 async function getDatabaseName(apiKey, databaseId) {
-    const requestHeaders = {
-        Authorization: `Bearer ${apiKey}`,
-        "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json",
-    };
+	const requestHeaders = {
+		Authorization: `Bearer ${apiKey}`,
+		"Notion-Version": "2022-06-28",
+		"Content-Type": "application/json",
+	};
 
-    try {
-        const response = await request({
-            url: `https://api.notion.com/v1/databases/${databaseId}`,
-            method: "GET",
-            headers: requestHeaders,
-        });
+	try {
+		const response = await request({
+			url: `https://api.notion.com/v1/databases/${databaseId}`,
+			method: "GET",
+			headers: requestHeaders,
+		});
 
-        const data = JSON.parse(response);
-        return data.title[0].plain_text;  // Extracting the database name from the response
-    } catch (error) {
-        console.error("Error fetching database name:", error);
-        return null;  // Return null if there's an error
-    }
+		const data = JSON.parse(response);
+		return data.title[0].plain_text;  // Extracting the database name from the response
+	} catch (error) {
+		console.error("Error fetching database name:", error);
+		return null;  // Return null if there's an error
+	}
 }
-
 
 
 async function fetchNotionData(databaseId, apiKey) {
@@ -39,7 +38,7 @@ async function fetchNotionData(databaseId, apiKey) {
 	let startCursor = null;
 
 	while (hasMore) {
-		const requestBody = startCursor ? { start_cursor: startCursor } : {};
+		const requestBody = startCursor ? {start_cursor: startCursor} : {};
 
 		const response = await request({
 			url: `https://api.notion.com/v1/databases/${databaseId}/query`,
@@ -59,12 +58,17 @@ async function fetchNotionData(databaseId, apiKey) {
 	return results;
 }
 
-async function extractContentFromPage(pageId, folderName, apiKey) {
+async function extractContentFromPage(pageId, pageName, apiKey, attachmentPath, vaultPath) {
 	const requestHeaders = {
 		Authorization: `Bearer ${apiKey}`,
 		"Notion-Version": "2022-06-28",
 		"Content-Type": "application/json",
 	};
+
+
+	const safeKey = (key) => (/[^\w\s]/.test(key) ? `"${key}"` : key);
+	const safeValue = (value) => (/[\W_]/.test(value) ? `"${value}"` : value);
+
 
 	const response = await request({
 		url: `https://api.notion.com/v1/blocks/${pageId}/children`,
@@ -73,8 +77,17 @@ async function extractContentFromPage(pageId, folderName, apiKey) {
 	});
 
 	const blocks = JSON.parse(response);
+	console.log('API Response:', JSON.stringify(blocks, null, 2));
+	const promises = [];
 	let content = "";
+	let numberCounter = 1;
+	let fileCounter = 1;
+	let previousBlockType = null;  // Keep track of the previous block type
 	for (const block of blocks.results) {
+		// Reset the numbered list counter if the block type changes
+		if (previousBlockType === 'numbered_list_item' && block.type !== 'numbered_list_item') {
+			numberCounter = 1;
+		}
 		switch (block.type) {
 			case "rich_text":
 				if (block.rich_text && block.rich_text.length) {
@@ -86,57 +99,92 @@ async function extractContentFromPage(pageId, folderName, apiKey) {
 			case "paragraph":
 				if (
 					block.paragraph &&
-					block.paragraph.text &&
-					block.paragraph.text.length
+					block.paragraph.rich_text &&
+					block.paragraph.rich_text.length
 				) {
-					content += `${block.paragraph.text
-						.map((t) => t.plain_text)
-						.join("")}\n\n`;
+					let paragraphContent = "";
+					for (const richTextElement of block.paragraph.rich_text) {
+						if (richTextElement.type === "text") {
+							paragraphContent += richTextElement.plain_text;
+						} else if (richTextElement.type === "mention" && richTextElement.mention.type === "date") {
+							paragraphContent += `@${richTextElement.plain_text}`; // Or however you want to format the date
+						} else {
+							// Handle other types as needed
+						}
+					}
+					content += `${paragraphContent}\n\n`;
 				}
 				break;
+
 			case "heading_1":
 			case "heading_2":
 			case "heading_3":
 				if (
 					block[block.type] &&
-					block[block.type].text &&
-					block[block.type].text.length
+					block[block.type].rich_text &&
+					block[block.type].rich_text.length
 				) {
-					const heading = `#`.repeat(
-						Number(block.type.split("_")[1])
-					);
-					content += `${heading} ${block[block.type].text
-						.map((t) => t.plain_text)
-						.join("")}\n\n`;
+					const heading = `#`.repeat(Number(block.type.split("_")[1]));
+					let headingContent = "";
+					for (const richTextElement of block[block.type].rich_text) {
+						let text = richTextElement.plain_text;
+						if (richTextElement.annotations.bold) {
+							text = `**${text}**`;
+						}
+						if (richTextElement.annotations.italic) {
+							text = `*${text}*`;
+						}
+						headingContent += text;
+					}
+					content += `${heading} ${headingContent}\n\n`;
 				}
 				break;
+
+
 			case "bulleted_list_item":
 			case "numbered_list_item":
 				if (
 					block[block.type] &&
-					block[block.type].text &&
-					block[block.type].text.length
+					block[block.type].rich_text &&
+					block[block.type].rich_text.length
 				) {
-					const prefix =
-						block.type === "bulleted_list_item" ? `-` : `1.`;
-					content += `${prefix} ${block[block.type].text
-						.map((t) => t.plain_text)
-						.join("")}\n`;
+					const prefix = block.type === "bulleted_list_item" ? "-" : `${numberCounter}.`;
+
+					// Increment the number counter if it's a numbered list item
+					if (block.type === "numbered_list_item") {
+						numberCounter++;
+					}
+
+					let listItemContent = "";
+					for (const richTextElement of block[block.type].rich_text) {
+						let textContent = richTextElement.plain_text;
+
+						// Apply bold formatting if needed
+						if (richTextElement.annotations.bold) {
+							textContent = `**${textContent}**`;
+						}
+
+						// Apply italic formatting if needed
+						if (richTextElement.annotations.italic) {
+							textContent = `*${textContent}*`;
+						}
+
+						listItemContent += textContent;
+					}
+
+					content += `${prefix} ${listItemContent}\n`;
 				}
 				break;
+
 			case "image":
-				if (
-					block.image &&
-					block.image.external &&
-					block.image.external.url
-				) {
+				if (block.image && block.image.external && block.image.external.url) {
 					const imageUrl = block.image.external.url;
 					const fileExtension = getImageExtension(imageUrl);
 					const imagePath = path.join(
-						folderName,
+						attachmentPath, // Use attachmentPath here
 						`image_${Date.now()}.${fileExtension}`
 					);
-					await downloadFile(imageUrl, imagePath, app, apiKey);
+					await downloadFile(imageUrl, imagePath, app, apiKey); // Assuming app and apiKey are available
 					content += `![[${path.basename(imagePath)}]]\n\n`;
 				}
 				break;
@@ -166,18 +214,57 @@ async function extractContentFromPage(pageId, folderName, apiKey) {
 					});
 				}
 				break;
+			case "code":
+				if (
+					block.code &&
+					block.code.rich_text &&
+					block.code.rich_text.length
+				) {
+					let codeContent = block.code.rich_text.map((text) => text.plain_text).join("");
+					const language = block.code.language ? block.code.language : "";
+					content += `\`\`\`${language}\n${codeContent}\n\`\`\`\n\n`;
+				}
+				break;
+
+			case "link_preview":
+				if (block.link_preview && block.link_preview.url) {
+					const linkUrl = block.link_preview.url;
+					content += `[Link Preview](${linkUrl})\n\n`;
+				}
+				break;
+
+			case "audio":
+				if (block.audio && block.audio.file && block.audio.file.url) {
+					const audioUrl = block.audio.file.url;
+					const audioExtension = path.extname(new URL(audioUrl).pathname);
+					const audioFileName = `${pageName}_${fileCounter}${audioExtension}`;
+					const audioFilePath = path.join(
+						attachmentPath, // Use attachmentPath here
+						audioFileName
+					);
+					await downloadFile(audioUrl, audioFilePath, app, apiKey);  // Assuming app and apiKey are available
+
+					content += `![[${path.basename(audioFilePath)}]]\n\n`;  // Or however you want to reference the audio file
+
+					// Increment the file counter
+					fileCounter++;
+				}
+				break;
 			case "file":
 				if (block.file && block.file.file && block.file.file.url) {
 					const fileUrl = block.file.file.url;
-					const fileExtension = path.extname(
-						new URL(fileUrl).pathname
-					);
+					const fileExtension = path.extname(new URL(fileUrl).pathname);
+					const fileName = `${pageName}_${fileCounter}${fileExtension}`;
 					const filePath = path.join(
-						folderName,
-						`file_${Date.now()}${fileExtension}`
+						attachmentPath,
+						fileName
 					);
 					await downloadFile(fileUrl, filePath, app, apiKey);
+
 					content += `![[${path.basename(filePath)}]]\n\n`;
+
+					// Increment the file counter
+					fileCounter++;
 				} else if (block.external && block.external.url) {
 					const externalUrl = block.external.url;
 					content += `[[${externalUrl}]]\n\n`; // Adjusted format for external links as well
@@ -193,9 +280,34 @@ async function extractContentFromPage(pageId, folderName, apiKey) {
 					content += `[${titleText}](${bookmarkUrl})\n\n`;
 				}
 				break;
+			case "child_page":
+				if (block.child_page && block.child_page.title) {
+					const childPageTitle = block.child_page.title;
+					const childPageId = block.id;
+
+					// Make a recursive call to fetch the content of the child page
+					const childContent = await extractContentFromPage(childPageId, childPageTitle, apiKey, attachmentPath, vaultPath);
+
+					// Prepare the path to save the subpage in the /subpages folder
+					const subpagePath = `${vaultPath}/subpages/${safeKey(childPageTitle)}.md`;
+
+					// Log and push to promises array
+					console.log("Writing sub file: " + subpagePath);
+					promises.push(writeFilePromise(subpagePath, childContent));
+					console.log("Sub File written: " + subpagePath);
+
+					// Link the subpage in the parent page content
+					content += `[[${childPageTitle}]]\n\n`;
+				}
+				break;
 		}
+		// Update the previous block type
+		previousBlockType = block.type;
+
+
 	}
 
+	await Promise.all(promises);
 	return content;
 }
 
