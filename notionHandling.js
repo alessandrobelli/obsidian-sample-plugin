@@ -71,13 +71,19 @@ async function fetchBlockContent(blocks, previousBlockType, numberCounter, conte
 					let paragraphContent = "";
 					for (const richTextElement of block.paragraph.rich_text) {
 						if (richTextElement.type === "text") {
-							paragraphContent += richTextElement.plain_text;
-						} else if (richTextElement.type === "mention" && richTextElement.mention.type === "date") {
+							if (richTextElement.href) {
+								paragraphContent += `[${richTextElement.plain_text}](${richTextElement.href})`;
+							} else {
+								paragraphContent += richTextElement.plain_text;
+							}
+						}
+						else if (richTextElement.type === "mention" && richTextElement.mention.type === "date") {
 							const originalDate = new Date(richTextElement.plain_text);
 							const formattedDate = `${originalDate.getDate()}.${originalDate.getMonth() + 1}.${originalDate.getFullYear()}`;
 							paragraphContent += `[[${formattedDate}]]`; // Date formatted as DD.MM.YYYY
 						} else {
 							// Handle other types as needed
+							console.log("Unhandled rich text type: " + richTextElement.type)
 						}
 					}
 					content += `${paragraphContent}\n\n`;
@@ -138,7 +144,11 @@ async function fetchBlockContent(blocks, previousBlockType, numberCounter, conte
 
 			case "image":
 				if (block.image && block.image.external && block.image.external.url) {
-					const imageUrl = block.image.external.url;
+					// Handle external images
+					content += `!()[${path.basename(imagePath)}]\n\n`;
+				}else if (block.image && block.image.file && block.image.file.url) {
+					// Handle images uploaded to Notion
+					const imageUrl = block.image.file.url;
 					const fileExtension = getImageExtension(imageUrl);
 					const imagePath = path.join(attachmentPath, // Use attachmentPath here
 						`image_${Date.now()}.${fileExtension}`);

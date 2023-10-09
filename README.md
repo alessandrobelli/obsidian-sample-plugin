@@ -29,6 +29,15 @@ Say goodbye to the manual labor of copying and pasting your data! 🙌
 
 ## How to Use 📘
 
+### Notion API Key
+
+First, you'll need go to Notion to get your secret API key and give it permissions for the databases you want import. 
+
+1. **Create API Key** Visit the [Notion Integrations](https://www.notion.so/my-integrations) page and create a new integration.
+2. Click `Show Integration` and copy the secret key. This is your Notion API key.
+3. **Notion Databases**: For each database you want to import, visit the database page and click `...` menu in the top right corner.
+4. Choose `Add Connection` and select the name of the integration you just created.
+
 ### Settings Tab
 
 Navigate to the `Notion to Obsidian` settings tab, where you can:
