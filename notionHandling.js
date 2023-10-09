@@ -145,7 +145,7 @@ async function fetchBlockContent(blocks, previousBlockType, numberCounter, conte
 			case "image":
 				if (block.image && block.image.external && block.image.external.url) {
 					// Handle external images
-					content += `!()[${path.basename(imagePath)}]\n\n`;
+					content += `![](${block.image.external.url})\n\n`;
 				}else if (block.image && block.image.file && block.image.file.url) {
 					// Handle images uploaded to Notion
 					const imageUrl = block.image.file.url;
