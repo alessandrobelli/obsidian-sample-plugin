@@ -1,4 +1,4 @@
-> Coming soon: This ![Obsidian](https://obsidian.md/) plugin is set to launch shortly!
+> WIP Unfortunately I don't have time to finish this. As soon as I can I will and publish it.
 
 # Notion Migration Plugin for Obsidian 🚀
 
