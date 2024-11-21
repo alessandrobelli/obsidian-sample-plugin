@@ -24,7 +24,7 @@
 	"dependencies": {
 		"@notionhq/client": "^2.2.10",
 		"axios": "^1.6.0",
-		"body-parser": "^1.20.2",
+		"body-parser": "^1.20.3",
 		"tippy.js": "^6.3.7"
 	}
 }
